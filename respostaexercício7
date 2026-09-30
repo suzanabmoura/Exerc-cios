@@ -1,0 +1,96 @@
+@echo off
+setlocal enabledelayedexpansion
+
+REM ===================================================================
+REM  SCAFFOLD - provisionamento.bat
+REM  Aula 07 - Provisionamento e Automacao de Instalacao
+REM
+REM  Este arquivo NAO tem codigo pronto - so o roteiro em comentarios.
+REM  Cada linha indica qual Peca usar naquele ponto (ver slides/README).
+REM  Substituam os comentarios pelo codigo real, mantendo a ordem.
+REM ===================================================================
+
+REM 1) Variaveis + cabecalho no log (Pecas 1, 2, 4)
+set app=htop
+set LOGFILE=log.txt
+echo %app%
+
+set apps=vlc 7zip git
+for %%A in (%apps%) do (
+    echo %%A
+)
+
+echo [OK] %%A >> %LOGFILE%
+echo [FALHA] %%A >> %LOGFILE%
+
+
+REM 2) [se precisar] Verificar Admin (Peca 7)
+net session >nul 2>&1
+if %errorlevel% neq 0 (
+    echo Precisa ser Admin.
+    exit /b 1
+)
+
+
+REM 3) for em "apps" (Peca 2):
+set apps=vlc 7zip git
+for %%A in (%apps%) do (
+    echo %%A
+)
+REM    - instalar / [ja instalado? Peca 8] / [tentar de novo Peca 9]
+winget list --id %%A -e >nul 2>&1
+if %errorlevel% equ 0 (
+    echo Ja instalado.
+) else (
+    REM instalar normalmente
+)
+
+set sucesso=0
+for /L %%R in (1,1,2) do (
+    if "!sucesso!"=="0" (
+        winget install --id %%A -e --silent --accept-package-agreements --accept-source-agreements
+        if !errorlevel! equ 0 set sucesso=1
+    )
+)
+
+
+REM    - if/else + contadores + log (Pecas 3, 4, 5)
+if !errorlevel! neq 0 (
+    echo Falhou
+) else (
+    echo OK
+)
+
+echo [OK] %%A >> %LOGFILE%
+echo [FALHA] %%A >> %LOGFILE%
+
+set /a ok_count+=1
+set /a fail_count+=1
+
+REM 4) Resumo final no log
+@echo off
+setlocal enabledelayedexpansion
+
+set LOGFILE=log_%COMPUTERNAME%.txt
+echo Inicio: %DATE% %TIME% > %LOGFILE%
+
+set apps=Notepad++.Notepad++ Microsoft.PowerToys Microsoft.WindowsTerminalX
+set ok_count=0
+set fail_count=0
+
+for %%A in (%apps%) do (
+    winget install --id %%A -e --silent --accept-package-agreements --accept-source-agreements
+    if !errorlevel! neq 0 (
+        echo [FALHA] %%A >> %LOGFILE%
+        set /a fail_count+=1
+    ) else (
+        echo [OK] %%A >> %LOGFILE%
+        set /a ok_count+=1
+    )
+)
+
+echo Sucesso: !ok_count! ^| Falhas: !fail_count! >> %LOGFILE%
+
+REM 5) [se precisar] os dois requisitos do grupo
+
+pause
